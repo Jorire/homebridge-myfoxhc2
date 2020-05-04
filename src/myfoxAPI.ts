@@ -25,12 +25,10 @@ export class MyfoxAPI{
    * @returns return an HTTP response if HTTP status in between 200 & 300
    */
   checkHttpStatus(action: string, res: Response): Response {
-    this.log.debug('[MyfoxAPI] checkHttpStatus -', action, res);
     if (res.ok) { 
       //if 200 <= HTTTP < 300
       return res;
     } else {        
-      this.log.debug('[MyfoxAPI] checkHttpStatus -', action, res.status, res.statusText);
       throw {action: action, status: res.status, statusText: res.statusText }; 
     }
   }
@@ -43,11 +41,10 @@ export class MyfoxAPI{
    * @returns return payload or throw an error if API status is invalid
    */
   getAPIPayload(action: string, json: any): any {
-    this.log.debug('[MyfoxAPI] getPayload -', action, json);
     if (json.status === 'OK') { 
+      this.log.debug('[MyfoxAPI] getAPIPayload -', JSON.stringify(json.payload));
       return json.payload;
     } else {        
-      this.log.debug('[MyfoxAPI] getPayload -', action, json);
       throw {action: action, status: json.status, payload: json }; 
     }
   }
@@ -86,7 +83,6 @@ export class MyfoxAPI{
           this.config.refreshToken = json.refresh_token;
           this.tokenExpiresIn = new Date();
           this.tokenExpiresIn.setSeconds(+(this.tokenExpiresIn.getSeconds()) + json.expires_in);
-          this.log.debug('[MyfoxAPI] get authentication token -', JSON.stringify(json));
         })
         .then(() => this.authToken);
     } else {
