@@ -1,15 +1,33 @@
 {
-  "pluginAlias": "ExampleHomebridgePlugin",
+  "pluginAlias": "MyfoxHC2",
   "pluginType": "platform",
   "singular": true,
   "schema": {
     "type": "object",
     "properties": {
-      "name": {
-        "title": "Name",
+      "siteId": {
+        "title": "Site Id",
+        "description": "Check homebridge startup log",
+        "type": "integer",
+        "required": true
+      },
+      "clientId": {
+        "title": "Client id",
+        "description": "Check https://api.myfox.me/dev/apps",
         "type": "string",
-        "required": true,
-        "default": "Example Dynamic Platform"
+        "required": true
+      },
+      "clientSecret": {
+        "title": "Client secret",
+        "description": "Check https://api.myfox.me/dev/apps",
+        "type": "string",
+        "required": true
+      },
+      "refreshToken": {
+        "title": "Initial refresh token",
+        "description": "Check https://api.myfox.me/dev/authentication, paragraph 'Get a Token'",
+        "type": "string",
+        "required": true
       }
     }
   }

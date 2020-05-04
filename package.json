@@ -1,9 +1,9 @@
 {
   "private": true,
-  "displayName": "Plugin Name",
-  "name": "homebridge-plugin-name",
+  "displayName": "Homebridge Myfox HC2 Plugin",
+  "name": "homebridge-myfoxhc2",
   "version": "1.0.0",
-  "description": "A short description about what your plugin does.",
+  "description": "Interact with Myfox HC2 alarm.",
   "license": "ISC",
   "repository": {
     "type": "git",
@@ -24,9 +24,16 @@
     "prepublishOnly": "npm run lint && npm run build"
   },
   "keywords": [
-    "homebridge-plugin"
+    "homebridge-plugin",
+    "myfox",
+    "hc2"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "@types/node-cron": "^2.0.3",
+    "@types/node-fetch": "^2.5.7",
+    "node-cron": "^2.0.3",
+    "node-fetch": "^2.6.0"
+  },
   "devDependencies": {
     "@types/node": "^13.13.2",
     "@typescript-eslint/eslint-plugin": "^2.29.0",

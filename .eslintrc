@@ -14,7 +14,7 @@
   ],
   "rules": {
     "quotes": ["warn", "single"],
-    "indent": ["warn", 2, { "SwitchCase": 1 }],
+    "indent": ["warn", 2, { "SwitchCase": 1, "MemberExpression": "off"}],
     "linebreak-style": ["warn", "unix"],
     "semi": ["warn", "always"],
     "comma-dangle": ["warn", "always-multiline"],
@@ -29,4 +29,3 @@
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/no-non-null-assertion": "off"
   }
-}
