@@ -5,12 +5,6 @@
   "schema": {
     "type": "object",
     "properties": {
-      "siteId": {
-        "title": "Site Id",
-        "description": "Check homebridge startup log",
-        "type": "integer",
-        "required": true
-      },
       "clientId": {
         "title": "Client id",
         "description": "Check https://api.myfox.me/dev/apps",
