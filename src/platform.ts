@@ -3,8 +3,11 @@ import type { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformCon
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { MyfoxAPI } from './myfoxAPI';
-import cron from "node-cron"; //TODO remove for debug only
 import { MyfoxSecuritySystem } from './accessories/myfoxSecuritySystem';
+import isGroup from './helpers/group-handler'
+import { MyfoxElectric } from './accessories/myfoxElectric';
+import { Site } from './model/myfox-api/site';
+
 /**
  * HomebridgePlatform
  * This class is the main constructor for your plugin, this is where you should
@@ -46,7 +49,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   async discoverMyfoxSites() {  
-    //DEVEL !!!
+    //TODO: remove for dev only !!!
     while(this.accessories.length > 0) {
       let accessory = this.accessories.pop();
       if(accessory){
@@ -54,6 +57,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
         this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);   
       }
     }
+    //TODO: remove for dev only !!!
     try{
       const sites = await this.myfoxAPI.getSites();
       //Register new sites
@@ -68,7 +72,9 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
           //Register
           this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
           this.accessories.push(accessory);
-          this.log.info('Register Site', accessory.displayName, accessory.UUID);          
+          this.log.info('Register Site', accessory.displayName, accessory.UUID);     
+          
+          this.discoverElectrics(site);
         }else{
           this.log.info('Already registered Site', site.label, uuid); 
         }
@@ -81,6 +87,35 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
           this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);        
         }
       });
+    }catch(error){
+      this.log.error(error)
+    }   
+  }
+
+  async discoverElectrics(site: Site) {
+    try{
+      const electrics = await this.myfoxAPI.getElectrics(site.siteId);
+      electrics.forEach(device => {
+        let uuid: string;
+        if(isGroup(device)){
+          uuid = this.api.hap.uuid.generate(`Myfox-${device.groupId}`);
+        }else{
+          uuid = this.api.hap.uuid.generate(`Myfox-${device.deviceId}`);
+        }
+        if (!this.accessories.find(accessory => accessory.UUID === uuid)) {
+          //If not already defined
+          //Create new accessory
+          const accessory = new this.api.platformAccessory(device.label, uuid);          
+          accessory.context.device = device;
+          new MyfoxElectric(this, this.myfoxAPI, site, accessory);            
+          //Register
+          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+          this.accessories.push(accessory);
+          this.log.info('\tRegister Electric', isGroup(device)?'[group]':'[socket]', accessory.displayName, accessory.UUID);     
+        }else{
+          this.log.info('\tAlready registered Electric', site.label, uuid); 
+        }
+      }); 
     }catch(error){
       this.log.error(error)
     }   
