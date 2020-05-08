@@ -122,14 +122,19 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
             //Register
             this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
             this.accessories.push(accessory);            
-            this.log.info('\tRegister Electric', isGroup(device)?'[group]':'[socket]', targetedService.name, device.label,  site.siteId, identifier, accessory.UUID);     
+            this.log.info('\tRegister electric device', isGroup(device)?'[group]':'[socket]', targetedService.name, device.label,  site.siteId, identifier, accessory.UUID);     
           }else{
             //Device already defined
-            this.log.info('\tAlready registered Electric', device.label, accessory.services[0].name, site.siteId, identifier, uuid); 
+            this.log.info('\tAlready registered electric device', device.label, accessory.services[0].name, site.siteId, identifier, uuid); 
           }
         }else{
           //Device hidden
-          this.log.info('\tHidden Electric', device.label, site.siteId, identifier, uuid); 
+          if(accessory){
+            //Unregister hidden device
+            this.log.info('Unregister hidden electric device', accessory.displayName, accessory.UUID);          
+            this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);   
+          }
+          this.log.info('\tHidden electric device', device.label, site.siteId, identifier, uuid); 
         }
       }); 
     }catch(error){
