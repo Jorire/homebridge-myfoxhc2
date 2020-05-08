@@ -55,10 +55,11 @@ export class MyfoxElectric{
         .on(CharacteristicEventTypes.GET, this.getCurrentState.bind(this));
       }
 
-      this.service.getCharacteristic(this.platform.Characteristic.On)
-      .on(CharacteristicEventTypes.GET, this.getCurrentState.bind(this))
-      .on(CharacteristicEventTypes.SET, this.setTargetState.bind(this));
-    
+      if(targetService != this.platform.Service.Fanv2){
+        this.service.getCharacteristic(this.platform.Characteristic.On)
+        .on(CharacteristicEventTypes.GET, this.getCurrentState.bind(this))
+        .on(CharacteristicEventTypes.SET, this.setTargetState.bind(this));
+      }    
   }
 
   setTargetState(callback: CharacteristicSetCallback) {
