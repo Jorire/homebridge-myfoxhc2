@@ -1,12 +1,14 @@
-import { CharacteristicEventTypes } from 'homebridge';
+import { CharacteristicEventTypes, PlatformConfig, WithUUID } from 'homebridge';
 import type { Service, PlatformAccessory, CharacteristicValue, CharacteristicSetCallback, CharacteristicGetCallback} from 'homebridge';
 import { MyfoxHC2Plugin } from '../platform';
 import { Site } from '../model/myfox-api/site';
 import { MyfoxAPI } from '../myfoxAPI';
 import { Device } from '../model/myfox-api/device';
 import { Group } from '../model/myfox-api/group';
+import { Config } from '../model/config';
 
 import isGroup from '../helpers/group-handler'
+import { ConfigDeviceCustomization } from '../model/config-device-customization';
 
 export class MyfoxElectric{
   private service: Service;
@@ -18,31 +20,46 @@ export class MyfoxElectric{
     private readonly myfoxAPI: MyfoxAPI,
     private site: Site,
     private readonly accessory: PlatformAccessory,
+    private readonly targetService: WithUUID<typeof Service>
   ) {
       //Get context
       this.device = accessory.context.device;
+
+      let identifier : string;
+      if(isGroup(this.device)){
+        identifier = this.device.groupId;
+      }else{
+        identifier = this.device.deviceId;
+      }
+
       if(isGroup(this.device)){
         this.accessory.getService(this.platform.Service.AccessoryInformation)!
           .setCharacteristic(this.platform.Characteristic.Manufacturer, this.site.brand)
           .setCharacteristic(this.platform.Characteristic.Model, 'Electric Group')
-          .setCharacteristic(this.platform.Characteristic.SerialNumber, `${this.site.siteId}-${this.device.groupId}`);
+          .setCharacteristic(this.platform.Characteristic.SerialNumber, `${this.site.siteId}-${identifier}`);
       }else{
         this.accessory.getService(this.platform.Service.AccessoryInformation)!
           .setCharacteristic(this.platform.Characteristic.Manufacturer, this.site.brand)
           .setCharacteristic(this.platform.Characteristic.Model, this.device.modelLabel)
-          .setCharacteristic(this.platform.Characteristic.SerialNumber, `${this.site.siteId}-${this.device.deviceId}`);
+          .setCharacteristic(this.platform.Characteristic.SerialNumber, `${this.site.siteId}-${identifier}`);
       }
 
-      this.service = this.accessory.getService(this.platform.Service.Outlet) ?? this.accessory.addService(this.platform.Service.Outlet);
+      this.service = this.accessory.getService(targetService) ?? this.accessory.addService(targetService);
       this.service.setCharacteristic(this.platform.Characteristic.Name, this.device.label);
       
+      if(targetService === this.platform.Service.Outlet){
+        this.service.getCharacteristic(this.platform.Characteristic.OutletInUse)
+        .on(CharacteristicEventTypes.GET, this.getCurrentState.bind(this));
+      }
+      if(targetService === this.platform.Service.Fanv2){
+        this.service.getCharacteristic(this.platform.Characteristic.Active)
+        .on(CharacteristicEventTypes.GET, this.getCurrentState.bind(this));
+      }
+
       this.service.getCharacteristic(this.platform.Characteristic.On)
       .on(CharacteristicEventTypes.GET, this.getCurrentState.bind(this))
       .on(CharacteristicEventTypes.SET, this.setTargetState.bind(this));
-
-      this.service.getCharacteristic(this.platform.Characteristic.OutletInUse)
-            .on(CharacteristicEventTypes.GET, this.getCurrentState.bind(this));
-
+    
   }
 
   setTargetState(value: CharacteristicValue, callback: CharacteristicSetCallback) {
@@ -56,5 +73,23 @@ export class MyfoxElectric{
 
   getCurrentState(callback: CharacteristicGetCallback) {
     callback(null, this.inUse); 
+  }
+
+  public static getTargetedService(platform: MyfoxHC2Plugin, customizedDeviceConf: ConfigDeviceCustomization | undefined): WithUUID<typeof Service> {
+    if(customizedDeviceConf){
+      switch(customizedDeviceConf.overrideType){
+        case "Lightbulb":
+          return platform.Service.Lightbulb;
+        case "Switch":
+          return platform.Service.Switch;
+        case "Fan":
+          return platform.Service.Fanv2;
+        case "Outlet":
+        default:
+          return platform.Service.Outlet;
+      }    
+    }else{
+      return platform.Service.Outlet;
+    }
   }
 }

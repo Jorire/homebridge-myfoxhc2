@@ -1,4 +1,4 @@
-import { APIEvent } from 'homebridge';
+import { APIEvent, WithUUID, Service } from 'homebridge';
 import type { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig } from 'homebridge';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
@@ -7,6 +7,8 @@ import { MyfoxSecuritySystem } from './accessories/myfoxSecuritySystem';
 import isGroup from './helpers/group-handler'
 import { MyfoxElectric } from './accessories/myfoxElectric';
 import { Site } from './model/myfox-api/site';
+import { Config } from './model/config';
+import { ConfigDeviceCustomization } from './model/config-device-customization';
 
 /**
  * HomebridgePlatform
@@ -53,7 +55,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
     while(this.accessories.length > 0) {
       let accessory = this.accessories.pop();
       if(accessory){
-        this.log.info('Unregister Site', accessory.displayName, accessory.UUID);          
+        this.log.info('Unregister accessory', accessory.displayName, accessory.UUID);          
         this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);   
       }
     }
@@ -92,32 +94,61 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
     }   
   }
 
-  async discoverElectrics(site: Site) {
+  async discoverElectrics(site: Site) {    
     try{
       const electrics = await this.myfoxAPI.getElectrics(site.siteId);
       electrics.forEach(device => {
-        let uuid: string;
+        let identifier;
         if(isGroup(device)){
-          uuid = this.api.hap.uuid.generate(`Myfox-${device.groupId}`);
+          identifier = device.groupId;
         }else{
-          uuid = this.api.hap.uuid.generate(`Myfox-${device.deviceId}`);
+          identifier = device.deviceId;
         }
-        if (!this.accessories.find(accessory => accessory.UUID === uuid)) {
-          //If not already defined
-          //Create new accessory
-          const accessory = new this.api.platformAccessory(device.label, uuid);          
-          accessory.context.device = device;
-          new MyfoxElectric(this, this.myfoxAPI, site, accessory);            
-          //Register
-          this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-          this.accessories.push(accessory);
-          this.log.info('\tRegister Electric', isGroup(device)?'[group]':'[socket]', accessory.displayName, accessory.UUID);     
+
+        let uuid: string;
+        uuid = this.api.hap.uuid.generate(`Myfox-${identifier}`);
+
+        let customConf : ConfigDeviceCustomization | undefined;
+        customConf = this.getDeviceCustomization(site.siteId,identifier);
+        let accessory = this.accessories.find(accessory => accessory.UUID === uuid);
+        if(!customConf || !customConf.hidden){
+          const targetedService = MyfoxElectric.getTargetedService(this, customConf);
+          if (!accessory) {
+            //If not already defined
+            //Create new accessory
+            accessory = new this.api.platformAccessory(device.label, uuid);          
+            accessory.context.device = device;
+            new MyfoxElectric(this, this.myfoxAPI, site, accessory, targetedService);            
+            //Register
+            this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+            this.accessories.push(accessory);            
+            this.log.info('\tRegister Electric', isGroup(device)?'[group]':'[socket]', targetedService.name, device.label,  site.siteId, identifier, accessory.UUID);     
+          }else{
+            //Device already defined
+            this.log.info('\tAlready registered Electric', device.label, accessory.services[0].name, site.siteId, identifier, uuid); 
+          }
         }else{
-          this.log.info('\tAlready registered Electric', site.label, uuid); 
+          //Device hidden
+          this.log.info('\tHidden Electric', device.label, site.siteId, identifier, uuid); 
         }
       }); 
     }catch(error){
       this.log.error(error)
     }   
+  }
+
+  private getDeviceCustomization(siteId: string, deviceId: string) : ConfigDeviceCustomization | undefined{
+    var customizedDevices = (<Config>this.config).devicesCustomization;
+    if(Array.isArray(customizedDevices)){
+      const cc : ConfigDeviceCustomization | undefined = customizedDevices.find(conf => {
+        return conf.deviceId.localeCompare(deviceId) === 0 && conf.siteId.localeCompare(siteId) === 0;
+      });
+      if(cc){
+        this.log.debug("Find customized device configuration", siteId, deviceId, cc);
+      }
+      return cc;
+    }else{      
+      return undefined;
+    }
   }
 }
