@@ -3,9 +3,9 @@ import type { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformCon
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
 import { MyfoxAPI } from './myfoxAPI';
-import { MyfoxSecuritySystem } from './accessories/myfoxSecuritySystem';
+import { MyfoxSecuritySystem } from './accessories/myfox-security-system';
 import isGroup from './helpers/group-handler'
-import { MyfoxElectric } from './accessories/myfoxElectric';
+import { MyfoxElectric } from './accessories/myfox-electric';
 import { Site } from './model/myfox-api/site';
 import { Config } from './model/config';
 import { DeviceCustomizationConfig } from './model/device-customization-config';
