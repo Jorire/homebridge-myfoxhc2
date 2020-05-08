@@ -168,22 +168,22 @@ export class MyfoxAPI{
    * Outlet / Electric group
    */
   public getElectrics(siteId: string): Promise<(Device|Group)[]>{
-    return  Promise.all([this.getOutlet(siteId), this.getElectricsGroup(siteId)])
+    return  Promise.all([this.getElectricsDevices(siteId), this.getElectricsGroups(siteId)])
                 .then(arrResults => [...arrResults[0], ...arrResults[1]]);
 
   }
 
-  public async getOutlet(siteId: string): Promise<Device[]>{
+  public async getElectricsDevices(siteId: string): Promise<Device[]>{
     const authToken = await this.getAuthtoken();
     
-    this.log.debug("[MyfoxAPI] getOutlet", siteId);
+    this.log.debug("[MyfoxAPI] getElectricsDevices", siteId);
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/socket/items?access_token=${authToken}`)
-              .then((res: Response) => this.checkHttpStatus('getOutlet', res))
+              .then((res: Response) => this.checkHttpStatus('getElectricsDevices', res))
               .then((res: Response) => this.getJSONPlayload(res))
-              .then((json: any) => this.getAPIPayload('getOutlet', json).items);
+              .then((json: any) => this.getAPIPayload('getElectricsDevices', json).items);
   }
   
-  public async getElectricsGroup(siteId: string): Promise<Group[]>{
+  public async getElectricsGroups(siteId: string): Promise<Group[]>{
     const authToken = await this.getAuthtoken();
     
     this.log.debug("[MyfoxAPI] getElectricsGroup", siteId);
@@ -277,5 +277,53 @@ export class MyfoxAPI{
                 .then((res: Response) => this.checkHttpStatus('playScenario', res))
                 .then((res: Response) => this.getJSONPlayload(res))
                 .then((json: any) => this.getAPIPayload('playScenario', json));
+  } 
+  
+  /***
+  * Shutters
+  */
+  public getShutters(siteId: string): Promise<(Device|Group)[]>{
+    return  Promise.all([this.getShuttersDevice(siteId), this.getShuttersGroup(siteId)])
+                .then(arrResults => [...arrResults[0], ...arrResults[1]]);
+
   }
+
+public async getShuttersDevice(siteId: string): Promise<Device[]>{
+  const authToken = await this.getAuthtoken();
+  
+  this.log.debug("[MyfoxAPI] getShuttersDevice", siteId);
+  return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/shutter/items?access_token=${authToken}`)
+            .then((res: Response) => this.checkHttpStatus('getShuttersDevice', res))
+            .then((res: Response) => this.getJSONPlayload(res))
+            .then((json: any) => this.getAPIPayload('getShuttersDevice', json).items);
+}
+
+public async getShuttersGroup(siteId: string): Promise<Group[]>{
+  const authToken = await this.getAuthtoken();
+  
+  this.log.debug("[MyfoxAPI] getShuttersGroup", siteId);
+  return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/group/shutter/items?access_token=${authToken}`)
+            .then((res: Response) => this.checkHttpStatus('getShuttersGroup', res))
+            .then((res: Response) => this.getJSONPlayload(res))
+            .then((json: any) => this.getAPIPayload('getShuttersGroup', json).items);
+}
+
+public async setShutterPosition(siteId: string, device: Device|Group, open: boolean ){
+  const method = 'POST';
+  const position = open ?'open':'close';
+  const authToken = await this.getAuthtoken();
+  if(isGroup(device)){
+    this.log.debug("[MyfoxAPI] setShutterPosition", siteId, device, position);
+    return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/group/${device.groupId}/shutter/${position}?access_token=${authToken}`,  { method: method })
+              .then((res: Response) => this.checkHttpStatus('setShutterPosition', res))
+              .then((res: Response) => this.getJSONPlayload(res))
+              .then((json: any) => this.getAPIPayload('setShutterPosition', json));
+  }else{
+    this.log.debug("[MyfoxAPI] setShutterPosition", siteId, device, position);
+    return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/${device.deviceId}/shutter/${position}?access_token=${authToken}`,  { method: method })
+              .then((res: Response) => this.checkHttpStatus('setShutterPosition', res))
+              .then((res: Response) => this.getJSONPlayload(res))
+              .then((json: any) => this.getAPIPayload('setShutterPosition', json));
+  }
+}
 }  

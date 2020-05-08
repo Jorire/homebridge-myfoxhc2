@@ -8,6 +8,7 @@ import isGroup from './helpers/group-handler'
 import { MyfoxElectric } from './accessories/myfox-electric';
 import { MyfoxTemperatureSensor } from './accessories/myfox-temperature-sensor';
 import { MyfoxScenario } from './accessories/myfox-scenario';
+import { MyfoxShutter } from './accessories/myfox-shutter';
 import { Site } from './model/myfox-api/site';
 import { Config } from './model/config';
 import { DeviceCustomizationConfig } from './model/device-customization-config';
@@ -85,6 +86,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
         await this.discoverElectrics(site);
         await this.discoverTemperatureSensors(site);
         await this.discoverScenarios(site);
+        await this.discoverShutters(site);
       }
 
       //Swap missing discovered accessory to accessory list
@@ -178,6 +180,45 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
         }else{
           //Device hidden
           this.log.info('\tElectric device', 'hidden', site.siteId, identifier, device.label, uuid);
+        }
+      }); 
+    }catch(error){
+      this.log.error(error)
+    }   
+  }
+
+  async discoverShutters(site: Site) {    
+    try{
+      const shutters = await this.myfoxAPI.getShutters(site.siteId);
+      shutters.forEach(device => {
+        let identifier;
+        if(isGroup(device)){
+          identifier = device.groupId;
+        }else{
+          identifier = device.deviceId;
+        }
+
+        let uuid: string;
+        uuid = this.api.hap.uuid.generate(`Myfox-${identifier}`);
+
+        let customConf = this.getDeviceCustomization(site.siteId,identifier);
+        let accessory = this.accessories.find(accessory => accessory.UUID.localeCompare(uuid) === 0);
+        if(!customConf || !customConf.hidden){
+          if (!accessory) {
+            //Create new accessory
+            accessory = new this.api.platformAccessory(device.label, uuid);                       
+            this.log.info('\tShutters device', 'new', site.siteId, identifier, device.label, uuid, isGroup(device)?'[group]':'[socket]');     
+          }else{
+            //Device already defined
+            this.log.info('\tShutters device', 'existing', site.siteId, identifier, device.label, uuid);
+          }          
+          accessory.context.device = device;
+          new MyfoxShutter(this, this.myfoxAPI, site, accessory);    
+          //Add to discovered devices    
+          this.discoveredAccessories.push(accessory);     
+        }else{
+          //Device hidden
+          this.log.info('\tShutters device', 'hidden', site.siteId, identifier, device.label, uuid);
         }
       }); 
     }catch(error){
