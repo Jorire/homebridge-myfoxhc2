@@ -235,16 +235,16 @@ export class MyfoxAPI{
               .then((json: any) => this.getAPIPayload('getTemperatures', json).items);
   }
   
-  public async getLastTemperatures(siteId: string, device: Device): Promise<TemperatureSensor | undefined> {
+  public async getLastTemperature(siteId: string, device: Device): Promise<TemperatureSensor | undefined> {
     const authToken = await this.getAuthtoken();
     
-    this.log.debug("[MyfoxAPI] getTemperatures", siteId, device);
+    this.log.debug("[MyfoxAPI] getLastTemperature", siteId, device);
     
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/data/temperature/items?access_token=${authToken}`)
-              .then((res: Response) => this.checkHttpStatus('getTemperatureSensors', res))
+              .then((res: Response) => this.checkHttpStatus('getLastTemperature', res))
               .then((res: Response) => this.getJSONPlayload(res))
               .then((json: any) => <TemperatureSensor[]>(this.getAPIPayload('getTemperatureSensors', json).items))
-              .then((tempSensors) => tempSensors.find(t => t.deviceId = device.deviceId) );
+              .then((tempSensors) => tempSensors.find(t => t.deviceId === device.deviceId));
   }
 
   /***
