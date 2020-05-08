@@ -1,14 +1,13 @@
-import { CharacteristicEventTypes, PlatformConfig, WithUUID } from 'homebridge';
-import type { Service, PlatformAccessory, CharacteristicValue, CharacteristicSetCallback, CharacteristicGetCallback} from 'homebridge';
+import { CharacteristicEventTypes, WithUUID } from 'homebridge';
+import type { Service, PlatformAccessory, CharacteristicSetCallback, CharacteristicGetCallback} from 'homebridge';
 import { MyfoxHC2Plugin } from '../platform';
 import { Site } from '../model/myfox-api/site';
 import { MyfoxAPI } from '../myfoxAPI';
 import { Device } from '../model/myfox-api/device';
 import { Group } from '../model/myfox-api/group';
-import { Config } from '../model/config';
 
 import isGroup from '../helpers/group-handler'
-import { ConfigDeviceCustomization } from '../model/config-device-customization';
+import { DeviceCustomizationConfig } from '../model/device-customization-config';
 
 export class MyfoxElectric{
   private service: Service;
@@ -20,7 +19,7 @@ export class MyfoxElectric{
     private readonly myfoxAPI: MyfoxAPI,
     private site: Site,
     private readonly accessory: PlatformAccessory,
-    private readonly targetService: WithUUID<typeof Service>
+    targetService: WithUUID<typeof Service>
   ) {
       //Get context
       this.device = accessory.context.device;
@@ -62,7 +61,7 @@ export class MyfoxElectric{
     
   }
 
-  setTargetState(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+  setTargetState(callback: CharacteristicSetCallback) {
     this.inUse = ! this.inUse;
     this.myfoxAPI.switchElectric(this.site.siteId, this.device, this.inUse)
                   .then(() => {
@@ -75,7 +74,7 @@ export class MyfoxElectric{
     callback(null, this.inUse); 
   }
 
-  public static getTargetedService(platform: MyfoxHC2Plugin, customizedDeviceConf: ConfigDeviceCustomization | undefined): WithUUID<typeof Service> {
+  public static getTargetedService(platform: MyfoxHC2Plugin, customizedDeviceConf: DeviceCustomizationConfig | undefined): WithUUID<typeof Service> {
     if(customizedDeviceConf){
       switch(customizedDeviceConf.overrideType){
         case "Lightbulb":

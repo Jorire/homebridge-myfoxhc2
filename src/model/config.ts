@@ -1,9 +1,9 @@
-import { ConfigDeviceCustomization } from "./config-device-customization";
+import { DeviceCustomizationConfig } from "./device-customization-config";
 import { PlatformConfig } from "homebridge";
 
 export interface Config extends PlatformConfig{
   clientId: string,
   clientSecret: string,
   refreshToken: string,
-  devicesCustomization: ConfigDeviceCustomization[]
+  devicesCustomization: DeviceCustomizationConfig[]
 }

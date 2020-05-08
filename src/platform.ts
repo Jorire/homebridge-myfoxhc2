@@ -8,7 +8,7 @@ import isGroup from './helpers/group-handler'
 import { MyfoxElectric } from './accessories/myfoxElectric';
 import { Site } from './model/myfox-api/site';
 import { Config } from './model/config';
-import { ConfigDeviceCustomization } from './model/config-device-customization';
+import { DeviceCustomizationConfig } from './model/device-customization-config';
 
 /**
  * HomebridgePlatform
@@ -108,7 +108,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
         let uuid: string;
         uuid = this.api.hap.uuid.generate(`Myfox-${identifier}`);
 
-        let customConf : ConfigDeviceCustomization | undefined;
+        let customConf : DeviceCustomizationConfig | undefined;
         customConf = this.getDeviceCustomization(site.siteId,identifier);
         let accessory = this.accessories.find(accessory => accessory.UUID === uuid);
         if(!customConf || !customConf.hidden){
@@ -142,10 +142,10 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
     }   
   }
 
-  private getDeviceCustomization(siteId: string, deviceId: string) : ConfigDeviceCustomization | undefined{
+  private getDeviceCustomization(siteId: string, deviceId: string) : DeviceCustomizationConfig | undefined{
     var customizedDevices = (<Config>this.config).devicesCustomization;
     if(Array.isArray(customizedDevices)){
-      const cc : ConfigDeviceCustomization | undefined = customizedDevices.find(conf => {
+      const cc : DeviceCustomizationConfig | undefined = customizedDevices.find(conf => {
         return conf.deviceId.localeCompare(deviceId) === 0 && conf.siteId.localeCompare(siteId) === 0;
       });
       if(cc){
