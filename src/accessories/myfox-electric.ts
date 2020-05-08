@@ -1,4 +1,4 @@
-import { CharacteristicEventTypes, WithUUID } from 'homebridge';
+import { CharacteristicEventTypes, WithUUID, CharacteristicValue } from 'homebridge';
 import type { Service, PlatformAccessory, CharacteristicSetCallback, CharacteristicGetCallback} from 'homebridge';
 import { MyfoxHC2Plugin } from '../platform';
 import { Site } from '../model/myfox-api/site';
@@ -52,7 +52,8 @@ export class MyfoxElectric{
       }
       if(targetService === this.platform.Service.Fanv2){
         this.service.getCharacteristic(this.platform.Characteristic.Active)
-        .on(CharacteristicEventTypes.GET, this.getCurrentState.bind(this));
+        .on(CharacteristicEventTypes.GET, this.getCurrentState.bind(this))
+        .on(CharacteristicEventTypes.SET, this.setTargetState.bind(this));
       }
 
       if(targetService != this.platform.Service.Fanv2){
@@ -62,12 +63,10 @@ export class MyfoxElectric{
       }    
   }
 
-  setTargetState(callback: CharacteristicSetCallback) {
+  setTargetState(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     this.inUse = ! this.inUse;
     this.myfoxAPI.switchElectric(this.site.siteId, this.device, this.inUse)
-                  .then(() => {
-                    callback(null) 
-                  } )
+                  .then(() => callback() )
                   .catch(error => this.platform.log.error(error));
   }
 
