@@ -17,9 +17,13 @@
         "type": "string",
         "required": true
       },
+      "debug": {
+        "title": "Debug messages",
+        "type": "boolean",
+        "default": false
+      },
       "debugMyfoxAPI": {
         "title": "Full debug Myfox API",
-        "description": "Check https://api.myfox.me/dev/apps",
         "type": "boolean",
         "default": false
       },
