@@ -108,6 +108,7 @@ export class MyfoxAPI{
    */
   public async getSites(): Promise<Site[]>{    
     const authToken = await this.getAuthtoken();
+    this.log.debug("[MyfoxAPI] getSites");
     return fetch(`${this.myfoxAPIUrl}/v2/client/site/items?access_token=${authToken}`)
         .then((res: Response) => this.checkHttpStatus('getSites', res))
         .then((res: Response) => res.json())
@@ -119,6 +120,7 @@ export class MyfoxAPI{
    */
   public async getAlarmState(siteId: string) {
     const authToken = await this.getAuthtoken();
+    this.log.debug("[MyfoxAPI] getAlarmState");
     return fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/security?access_token=${authToken}`)
               .then((res: Response) => this.checkHttpStatus('getSites', res))
               .then((res: Response) => res.json())
@@ -132,6 +134,7 @@ export class MyfoxAPI{
     const method = 'POST';
     const authToken = await this.getAuthtoken();
     
+    this.log.debug("[MyfoxAPI] setAlarmState");
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/security/set/${securityLevel}?access_token=${authToken}`,  { method: method })
               .then((res: Response) => this.checkHttpStatus('setAlarmState', res))
               .then((res: Response) => res.json())
@@ -149,6 +152,8 @@ export class MyfoxAPI{
 
   public async getOutlet(siteId: string): Promise<Device[]>{
     const authToken = await this.getAuthtoken();
+    
+    this.log.debug("[MyfoxAPI] getOutlet");
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/socket/items?access_token=${authToken}`)
               .then((res: Response) => this.checkHttpStatus('getOutlet', res))
               .then((res: Response) => res.json())
@@ -157,6 +162,8 @@ export class MyfoxAPI{
   
   public async getElectricsGroup(siteId: string): Promise<Group[]>{
     const authToken = await this.getAuthtoken();
+    
+    this.log.debug("[MyfoxAPI] getElectricsGroup");
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/group/electric/items?access_token=${authToken}`)
               .then((res: Response) => this.checkHttpStatus('getElectricsGroup', res))
               .then((res: Response) => res.json())
@@ -169,12 +176,14 @@ export class MyfoxAPI{
 
     const authToken = await this.getAuthtoken();
     if(isGroup(device)){
+      this.log.debug("[MyfoxAPI] switchElectricGroup");
       return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/group/${device.groupId}/electric/${state}?access_token=${authToken}`,  { method: method })
                 .then((res: Response) => this.checkHttpStatus('switchElectric', res))
                 .then((res: Response) => res.json())
                 .then((json: any) => this.getAPIPayload('switchElectric', json));
     }else{
-      return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/group/${device.deviceId}/socket/${state}?access_token=${authToken}`,  { method: method })
+      this.log.debug("[MyfoxAPI] switchElectricDevice");
+      return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/${device.deviceId}/socket/${state}?access_token=${authToken}`,  { method: method })
                 .then((res: Response) => this.checkHttpStatus('switchElectric', res))
                 .then((res: Response) => res.json())
                 .then((json: any) => this.getAPIPayload('switchElectric', json));
