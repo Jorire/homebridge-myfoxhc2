@@ -78,7 +78,7 @@ export class MyfoxElectric{
 
   setTargetState(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     this.inUse = JSON.parse(value.toString());
-    if(this.customizedDeviceConf?.overrideType.localeCompare("Button") === 0){
+    if(this.customizedDeviceConf?.overrideType && this.customizedDeviceConf?.overrideType.localeCompare("Button") === 0){
       if(this.inUse){
         this.myfoxAPI.switchElectric(this.site.siteId, this.device, this.inUse)
         .then(() => callback() )                  
@@ -97,7 +97,7 @@ export class MyfoxElectric{
   }
 
   public static getTargetedService(platform: MyfoxHC2Plugin, customizedDeviceConf: DeviceCustomizationConfig | undefined): WithUUID<typeof Service> {
-    if(customizedDeviceConf){
+    if(customizedDeviceConf && customizedDeviceConf.overrideType){
       switch(customizedDeviceConf.overrideType){
         case "Lightbulb":
           return platform.Service.Lightbulb;
