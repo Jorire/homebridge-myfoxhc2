@@ -19,6 +19,7 @@ export class MyfoxSecuritySystem {
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(Characteristic.Manufacturer, this.site.brand)
       .setCharacteristic(Characteristic.Model, 'HC2')
+      
       .setCharacteristic(Characteristic.SerialNumber, this.site.siteId);
     
     this.service = this.accessory.getService(this.platform.Service.SecuritySystem) ?? this.accessory.addService(this.platform.Service.SecuritySystem);

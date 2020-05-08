@@ -22,6 +22,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
   public readonly Service = this.api.hap.Service;
   public readonly Characteristic = this.api.hap.Characteristic;
   public readonly myfoxAPI : MyfoxAPI;
+  private debug: boolean; 
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
@@ -33,14 +34,8 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
     this.myfoxAPI = new MyfoxAPI(this.log, this.config);
+    this.debug = config.debug ?config.debugMyfoxAPI : false;
     this.api.on(APIEvent.DID_FINISH_LAUNCHING, () => {      
-      /*while(this.accessories.length > 0) {
-        let accessory = this.accessories.pop();
-        if(accessory){
-          this.log.info('[DEVEL] Unregister accessory', accessory.displayName, accessory.UUID);          
-          this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);   
-        }
-      }*/
       // All cached accessories restored discover new MyFox sites and devices
       this.log.info('Discover Myfox sites');
       this.discoverMyfoxSites();
@@ -259,6 +254,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
       this.log.error(error)
     }   
   }
+
   private getDeviceCustomization(siteId: string, deviceId: string) : DeviceCustomizationConfig | undefined{
     var customizedDevices = (<Config>this.config).devicesCustomization;
     if(Array.isArray(customizedDevices)){
@@ -266,7 +262,9 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
         return conf.deviceId.localeCompare(deviceId) === 0 && conf.siteId.localeCompare(siteId) === 0;
       });
       if(cc){
-        this.log.debug("Find customized device configuration", siteId, deviceId, cc);
+        if(this.debug){
+          this.log.debug("Find customized device configuration", siteId, deviceId, cc);
+        }        
       }
       return cc;
     }else{      
