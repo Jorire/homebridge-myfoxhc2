@@ -1,4 +1,4 @@
-import { CharacteristicEventTypes } from 'homebridge';
+import { CharacteristicEventTypes, Characteristic } from 'homebridge';
 import type { Service, PlatformAccessory, CharacteristicValue, CharacteristicSetCallback, CharacteristicGetCallback} from 'homebridge';
 
 import { MyfoxHC2Plugin } from '../platform';
@@ -17,26 +17,26 @@ export class MyfoxSecuritySystem {
     this.site = accessory.context.device;
     
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
-      .setCharacteristic(this.platform.Characteristic.Manufacturer, this.site.brand)
-      .setCharacteristic(this.platform.Characteristic.Model, 'HC2')
-      .setCharacteristic(this.platform.Characteristic.SerialNumber, this.site.siteId);
+      .setCharacteristic(Characteristic.Manufacturer, this.site.brand)
+      .setCharacteristic(Characteristic.Model, 'HC2')
+      .setCharacteristic(Characteristic.SerialNumber, this.site.siteId);
     
     this.service = this.accessory.getService(this.platform.Service.SecuritySystem) ?? this.accessory.addService(this.platform.Service.SecuritySystem);
 
     //Mandatory Characteristic
-    this.service.setCharacteristic(this.platform.Characteristic.Name, `Alarme ${this.site.label}`);
+    this.service.setCharacteristic(Characteristic.Name, `Alarme ${this.site.label}`);
 
     const targetStates: number[] = [];
-    targetStates.push(this.platform.Characteristic.SecuritySystemTargetState.AWAY_ARM); 
-    targetStates.push(this.platform.Characteristic.SecuritySystemTargetState.NIGHT_ARM); 
-    targetStates.push(this.platform.Characteristic.SecuritySystemTargetState.DISARM); 
+    targetStates.push(Characteristic.SecuritySystemTargetState.AWAY_ARM); 
+    targetStates.push(Characteristic.SecuritySystemTargetState.NIGHT_ARM); 
+    targetStates.push(Characteristic.SecuritySystemTargetState.DISARM); 
 
-    this.service.getCharacteristic(this.platform.Characteristic.SecuritySystemTargetState)
+    this.service.getCharacteristic(Characteristic.SecuritySystemTargetState)
                 .setProps({validValues: targetStates})
                 .on(CharacteristicEventTypes.GET, this.getCurrentState.bind(this))
                 .on(CharacteristicEventTypes.SET, this.setTargetState.bind(this));
 
-    this.service.getCharacteristic(this.platform.Characteristic.SecuritySystemCurrentState)
+    this.service.getCharacteristic(Characteristic.SecuritySystemCurrentState)
                 .on(CharacteristicEventTypes.GET, this.getCurrentState.bind(this));
   }
 
@@ -46,49 +46,50 @@ export class MyfoxSecuritySystem {
                     let state = undefined;
                     switch(json.statusLabel ){
                       case 'disarmed': 
-                      state = this.platform.Characteristic.SecuritySystemCurrentState.DISARMED;
+                      state = Characteristic.SecuritySystemCurrentState.DISARMED;
                       break;
 
                       case 'partial': 
-                      state = this.platform.Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+                      state = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
                       break;
 
                       case 'armed': 
-                      state = this.platform.Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+                      state = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
                       break;
 
                       default:
                         throw new Error("Unkown alarm status");
                     }
-                    this.service.setCharacteristic(this.platform.Characteristic.SecuritySystemCurrentState, state);    
+                    this.service.setCharacteristic(Characteristic.SecuritySystemCurrentState, state);    
                     callback(null, state) 
                   } )
-                  .catch(error => this.platform.log.error(error));
+                  .catch(error => {callback(error); this.platform.log.error(error);});
   }
 
   setTargetState(value: CharacteristicValue, callback: CharacteristicSetCallback) {
     let state = undefined;
     switch(value ){
-      case this.platform.Characteristic.SecuritySystemCurrentState.DISARMED: 
+      case Characteristic.SecuritySystemCurrentState.DISARMED: 
       state = 'disarmed';
       break;
 
-      case this.platform.Characteristic.SecuritySystemCurrentState.NIGHT_ARM: 
+      case Characteristic.SecuritySystemCurrentState.NIGHT_ARM: 
       state = 'partial';
       break;
 
-      case this.platform.Characteristic.SecuritySystemCurrentState.AWAY_ARM: 
+      case Characteristic.SecuritySystemCurrentState.AWAY_ARM: 
       state = 'armed';
       break;
 
       default:
+        callback(new Error("Unkown alarm status"));
         throw new Error("Unkown alarm status");
     }
     this.myfoxAPI.setAlarmState(this.site.siteId, state)
                   .then(json => {
-                    this.service.setCharacteristic(this.platform.Characteristic.SecuritySystemCurrentState, value);    
+                    this.service.setCharacteristic(Characteristic.SecuritySystemCurrentState, value);    
                     callback(null) 
                   } )
-                  .catch(error => this.platform.log.error(error));
+                  .catch(error => {callback(error); this.platform.log.error(error)} );
   }
 }

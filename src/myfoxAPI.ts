@@ -4,6 +4,7 @@ import { Site } from './model/myfox-api/site';
 import fetch from 'node-fetch';
 import { Device } from './model/myfox-api/device';
 import { Group } from './model/myfox-api/group';
+import { Scenario } from './model/myfox-api/scenario';
 import { TemperatureValue } from './model/myfox-api/temperature-value';
 import { TemperatureSensor } from './model/myfox-api/temperature-sensor';
 
@@ -55,7 +56,7 @@ export class MyfoxAPI{
       }    
       return object;
     }catch(error){
-      this.log.error('[MyfoxAPI] parse JSON result', error, body);
+      this.log.error('[MyfoxAPI] parse JSON result', body);
       throw( error );
     }    
   }
@@ -244,5 +245,37 @@ export class MyfoxAPI{
               .then((res: Response) => this.getJSONPlayload(res))
               .then((json: any) => <TemperatureSensor[]>(this.getAPIPayload('getTemperatureSensors', json).items))
               .then((tempSensors) => tempSensors.find(t => t.deviceId = device.deviceId) );
+  }
+
+  /***
+   * Scenario
+   */
+  public async getScenarios(siteId: string): Promise<Device[]> {
+    const authToken = await this.getAuthtoken();
+    
+    this.log.debug("[MyfoxAPI] getTemperatureSensors", siteId);
+    return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/scenario/items?access_token=${authToken}`)
+              .then((res: Response) => this.checkHttpStatus('getScenarios', res))
+              .then((res: Response) => this.getJSONPlayload(res))
+              .then((json: any) => this.getAPIPayload('getScenarios', json).items)
+              .then((items: Scenario[]) => {
+                  let scenarios: Device[] = [];
+                  items.forEach(sc =>{
+                    if(sc.typeLabel.localeCompare('onDemand') === 0){
+                      scenarios.push({deviceId: sc.scenarioId, label: sc.label, modelLabel: 'Scenario'});
+                    }
+                  });
+                  return scenarios;
+              });
+  }
+
+  public async playScenario(siteId: string, device: Device){
+    const method = 'POST';
+    const authToken = await this.getAuthtoken();
+      this.log.debug("[MyfoxAPI] playScenario", siteId, device);
+      return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/scenario/${device.deviceId}/play?access_token=${authToken}`,  { method: method })
+                .then((res: Response) => this.checkHttpStatus('playScenario', res))
+                .then((res: Response) => this.getJSONPlayload(res))
+                .then((json: any) => this.getAPIPayload('playScenario', json));
   }
 }  

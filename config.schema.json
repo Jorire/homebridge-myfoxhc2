@@ -36,7 +36,7 @@
           "properties": {
             "siteId": { "title": "Site identifier", "type": "string" },
             "deviceId": { "title": "Device identifier", "type": "string" },
-            "overrideType": {"type": "string", "description":"Only available for electric devices or electric groups", "enum": [ "Default", "Outlet", "Switch", "Lightbulb", "Fanv2" ]},
+            "overrideType": {"type": "string", "description":"Only available for electric devices or electric groups", "enum": [ "Outlet", "Switch", "Lightbulb", "Button", "Fanv2" ]},
             "hidden": { "type": "boolean" }
           }
         }
