@@ -22,6 +22,18 @@
         "description": "Check https://api.myfox.me/dev/authentication, paragraph 'Get a Token'",
         "type": "string",
         "required": true
+      },
+      "devicesCustomization": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "siteId": { "title": "Site identifier", "type": "string" },
+            "deviceId": { "title": "Device identifier", "type": "string" },
+            "overrideType": {"type": "string", "description":"Only available for electric devices or electric groups", "enum": [ "Default", "Outlet", "Switch", "Lightbulb", "Fanv2" ]},
+            "hidden": { "type": "boolean" }
+          }
+        }
       }
     }
   }
