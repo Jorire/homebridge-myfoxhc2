@@ -1,5 +1,5 @@
 import { Logger, PlatformConfig } from 'homebridge';
-import { Response} from 'node-fetch'; 
+import { Response, FetchError} from 'node-fetch'; 
 import { Site } from './model/myfox-api/site';
 import fetch from 'node-fetch';
 import { Device } from './model/myfox-api/device';
@@ -14,6 +14,7 @@ export class MyfoxAPI{
   private readonly site: number;
   private authToken: string; 
   private tokenExpiresIn: Date;
+  private debugPlayload: boolean; 
 
   constructor(
       public readonly log: Logger,
@@ -22,6 +23,7 @@ export class MyfoxAPI{
     this.authToken = '';
     this.tokenExpiresIn = new Date(0);    
     this.site = config.site;
+    this.debugPlayload = config.debugMyfoxAPI ?config.debugMyfoxAPI : false;
   }  
 
   /**
@@ -39,6 +41,24 @@ export class MyfoxAPI{
     }
   }
   
+  /**
+   * Debug Myfox API json playload
+   * @param action 
+   * @param json 
+   */
+  async getJSONPlayload(response: Response): Promise<any>{
+    const body = await response.text();
+    try{
+      let object : any = JSON.parse(body);
+      if(this.debugPlayload){
+        this.log.debug('[MyfoxAPI] parse JSON result', JSON.stringify(object));
+      }    
+      return object;
+    }catch(error){
+      this.log.error('[MyfoxAPI] parse JSON result', error, response.body);
+      throw( error );
+    }    
+  }
 
   /**
    * Check HTTP status, throw an error if HTTP error
@@ -48,7 +68,6 @@ export class MyfoxAPI{
    */
   getAPIPayload(action: string, json: any): any {
     if (json.status === 'OK') { 
-      this.log.debug('[MyfoxAPI] getAPIPayload -', JSON.stringify(json.payload));
       return json.payload;
     } else {        
       throw {action: action, status: json.status, payload: json }; 
@@ -81,9 +100,10 @@ export class MyfoxAPI{
       };
       const body = `grant_type=refresh_token&refresh_token=${this.config.refreshToken}`;
 
+      this.log.debug("[MyfoxAPI] getAuthtoken");
       return fetch(`${this.myfoxAPIUrl}/oauth2/token`, { method: method, headers: headers, body: body})
         .then((res: Response)=> this.checkHttpStatus('getAuthtoken', res))
-        .then((res: Response)=> res.json())
+        .then((res: Response)=> this.getJSONPlayload(res))
         .then((json: any) => {
           this.authToken = json.access_token;
           this.config.refreshToken = json.refresh_token;
@@ -113,7 +133,7 @@ export class MyfoxAPI{
     this.log.debug("[MyfoxAPI] getSites");
     return fetch(`${this.myfoxAPIUrl}/v2/client/site/items?access_token=${authToken}`)
         .then((res: Response) => this.checkHttpStatus('getSites', res))
-        .then((res: Response) => res.json())
+        .then((res: Response) => this.getJSONPlayload(res))
         .then((json: any) => this.getAPIPayload('getSites', json).items);
   }
 
@@ -122,10 +142,10 @@ export class MyfoxAPI{
    */
   public async getAlarmState(siteId: string) {
     const authToken = await this.getAuthtoken();
-    this.log.debug("[MyfoxAPI] getAlarmState");
+    this.log.debug("[MyfoxAPI] getAlarmState", siteId);
     return fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/security?access_token=${authToken}`)
               .then((res: Response) => this.checkHttpStatus('getSites', res))
-              .then((res: Response) => res.json())
+              .then((res: Response) => this.getJSONPlayload(res))
               .then((json: any) => this.getAPIPayload('getAlarmState', json));
   }  
   
@@ -136,10 +156,10 @@ export class MyfoxAPI{
     const method = 'POST';
     const authToken = await this.getAuthtoken();
     
-    this.log.debug("[MyfoxAPI] setAlarmState");
+    this.log.debug("[MyfoxAPI] setAlarmState", siteId, securityLevel);
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/security/set/${securityLevel}?access_token=${authToken}`,  { method: method })
               .then((res: Response) => this.checkHttpStatus('setAlarmState', res))
-              .then((res: Response) => res.json())
+              .then((res: Response) => this.getJSONPlayload(res))
               .then((json: any) => this.getAPIPayload('setAlarmState', json));
  }
 
@@ -155,20 +175,20 @@ export class MyfoxAPI{
   public async getOutlet(siteId: string): Promise<Device[]>{
     const authToken = await this.getAuthtoken();
     
-    this.log.debug("[MyfoxAPI] getOutlet");
+    this.log.debug("[MyfoxAPI] getOutlet", siteId);
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/socket/items?access_token=${authToken}`)
               .then((res: Response) => this.checkHttpStatus('getOutlet', res))
-              .then((res: Response) => res.json())
+              .then((res: Response) => this.getJSONPlayload(res))
               .then((json: any) => this.getAPIPayload('getOutlet', json).items);
   }
   
   public async getElectricsGroup(siteId: string): Promise<Group[]>{
     const authToken = await this.getAuthtoken();
     
-    this.log.debug("[MyfoxAPI] getElectricsGroup");
+    this.log.debug("[MyfoxAPI] getElectricsGroup", siteId);
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/group/electric/items?access_token=${authToken}`)
               .then((res: Response) => this.checkHttpStatus('getElectricsGroup', res))
-              .then((res: Response) => res.json())
+              .then((res: Response) => this.getJSONPlayload(res))
               .then((json: any) => this.getAPIPayload('getElectricsGroup', json).items);
   }
 
@@ -178,16 +198,16 @@ export class MyfoxAPI{
 
     const authToken = await this.getAuthtoken();
     if(isGroup(device)){
-      this.log.debug("[MyfoxAPI] switchElectricGroup");
+      this.log.debug("[MyfoxAPI] switchElectricGroup", siteId, device);
       return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/group/${device.groupId}/electric/${state}?access_token=${authToken}`,  { method: method })
                 .then((res: Response) => this.checkHttpStatus('switchElectric', res))
-                .then((res: Response) => res.json())
+                .then((res: Response) => this.getJSONPlayload(res))
                 .then((json: any) => this.getAPIPayload('switchElectric', json));
     }else{
-      this.log.debug("[MyfoxAPI] switchElectricDevice");
+      this.log.debug("[MyfoxAPI] switchElectricDevice", siteId, device);
       return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/${device.deviceId}/socket/${state}?access_token=${authToken}`,  { method: method })
                 .then((res: Response) => this.checkHttpStatus('switchElectric', res))
-                .then((res: Response) => res.json())
+                .then((res: Response) => this.getJSONPlayload(res))
                 .then((json: any) => this.getAPIPayload('switchElectric', json));
     }
   }
@@ -198,31 +218,30 @@ export class MyfoxAPI{
   public async getTemperatureSensors(siteId: string): Promise<Device[]> {
     const authToken = await this.getAuthtoken();
     
-    this.log.debug("[MyfoxAPI] getTemperatureSensors");
+    this.log.debug("[MyfoxAPI] getTemperatureSensors", siteId);
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/data/temperature/items?access_token=${authToken}`)
               .then((res: Response) => this.checkHttpStatus('getTemperatureSensors', res))
-              .then((res: Response) => res.json())
+              .then((res: Response) => this.getJSONPlayload(res))
               .then((json: any) => this.getAPIPayload('getTemperatureSensors', json).items);
   }
 
   public async getTemperatures(siteId: string, device: Device): Promise<TemperatureValue[]> {
     const authToken = await this.getAuthtoken();
-    
-    this.log.debug("[MyfoxAPI] getTemperatures");
+    this.log.debug("[MyfoxAPI] getTemperatures", siteId, device);
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/${device.deviceId}/data/temperature?access_token=${authToken}`)
               .then((res: Response) => this.checkHttpStatus('getTemperatures', res))
-              .then((res: Response) => res.json())
+              .then((res: Response) => this.getJSONPlayload(res))
               .then((json: any) => this.getAPIPayload('getTemperatures', json).items);
   }
   
   public async getLastTemperatures(siteId: string, device: Device): Promise<TemperatureSensor | undefined> {
     const authToken = await this.getAuthtoken();
     
-    this.log.debug("[MyfoxAPI] getTemperatures");
+    this.log.debug("[MyfoxAPI] getTemperatures", siteId, device);
     
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/data/temperature/items?access_token=${authToken}`)
               .then((res: Response) => this.checkHttpStatus('getTemperatureSensors', res))
-              .then((res: Response) => res.json())
+              .then((res: Response) => this.getJSONPlayload(res))
               .then((json: any) => <TemperatureSensor[]>(this.getAPIPayload('getTemperatureSensors', json).items))
               .then((tempSensors) => tempSensors.find(t => t.deviceId = device.deviceId) );
   }

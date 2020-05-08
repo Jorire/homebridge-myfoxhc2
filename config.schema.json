@@ -17,6 +17,12 @@
         "type": "string",
         "required": true
       },
+      "debugMyfoxAPI": {
+        "title": "Full debug Myfox API",
+        "description": "Check https://api.myfox.me/dev/apps",
+        "type": "boolean",
+        "default": false
+      },
       "refreshToken": {
         "title": "Initial refresh token",
         "description": "Check https://api.myfox.me/dev/authentication, paragraph 'Get a Token'",
