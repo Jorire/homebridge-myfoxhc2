@@ -38,7 +38,7 @@ export class MyfoxTemperatureSensor{
 
   getCurrentTemperature(callback: CharacteristicGetCallback) {
 
-    this.myfoxAPI.getLastTemperatures(this.site.siteId, this.device)
+    this.myfoxAPI.getLastTemperature(this.site.siteId, this.device)
                   .then((temperature) => {                    
                     if(temperature){
                       this.temperature = temperature.lastTemperature;
