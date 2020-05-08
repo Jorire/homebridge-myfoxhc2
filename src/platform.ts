@@ -6,6 +6,7 @@ import { MyfoxAPI } from './myfoxAPI';
 import { MyfoxSecuritySystem } from './accessories/myfox-security-system';
 import isGroup from './helpers/group-handler'
 import { MyfoxElectric } from './accessories/myfox-electric';
+import { MyfoxTemperatureSensor } from './accessories/myfox-temperature-sensor';
 import { Site } from './model/myfox-api/site';
 import { Config } from './model/config';
 import { DeviceCustomizationConfig } from './model/device-customization-config';
@@ -77,6 +78,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
           this.log.info('Register Site', accessory.displayName, accessory.UUID);     
           
           this.discoverElectrics(site);
+          this.discoverTemperatureSensors(site);
         }else{
           this.log.info('Already registered Site', site.label, uuid); 
         }
@@ -125,16 +127,16 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
             this.log.info('\tRegister electric device', isGroup(device)?'[group]':'[socket]', targetedService.name, device.label,  site.siteId, identifier, accessory.UUID);     
           }else{
             //Device already defined
-            this.log.info('\tAlready registered electric device', device.label, accessory.services[0].name, site.siteId, identifier, uuid); 
+            this.log.info('\tAlready registered electric device', isGroup(device)?'[group]':'[socket]', accessory.services[0].name, device.label, site.siteId, identifier, uuid); 
           }
         }else{
           //Device hidden
           if(accessory){
             //Unregister hidden device
-            this.log.info('Unregister hidden electric device', accessory.displayName, accessory.UUID);          
+            this.log.info('Unregister hidden electric device', isGroup(device)?'[group]':'[socket]', accessory.services[0].name, accessory.displayName, site.siteId, identifier, accessory.UUID);          
             this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);   
           }
-          this.log.info('\tHidden electric device', device.label, site.siteId, identifier, uuid); 
+          this.log.info('\tHidden electric device', isGroup(device)?'[group]':'[socket]', device.label, site.siteId, identifier, uuid); 
         }
       }); 
     }catch(error){
@@ -142,6 +144,47 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
     }   
   }
 
+
+  async discoverTemperatureSensors(site: Site) {    
+    try{
+      const tsensors = await this.myfoxAPI.getTemperatureSensors(site.siteId);
+      tsensors.forEach(device => {
+        const identifier = device.deviceId;
+
+        let uuid: string;
+        uuid = this.api.hap.uuid.generate(`Myfox-${identifier}`);
+
+        let customConf = this.getDeviceCustomization(site.siteId,identifier);
+        let accessory = this.accessories.find(accessory => accessory.UUID === uuid);
+        if(!customConf || !customConf.hidden){
+          if (!accessory) {
+            //If not already defined
+            //Create new accessory
+            accessory = new this.api.platformAccessory(device.label, uuid);          
+            accessory.context.device = device;
+            new MyfoxTemperatureSensor(this, this.myfoxAPI, site, accessory);            
+            //Register
+            this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
+            this.accessories.push(accessory);            
+            this.log.info('\tRegister temp sensor', device.label,  site.siteId, identifier, accessory.UUID);     
+          }else{
+            //Device already defined
+            this.log.info('\tAlready registered temp sensor', device.label, site.siteId, identifier, uuid); 
+          }
+        }else{
+          //Device hidden
+          if(accessory){
+            //Unregister hidden device
+            this.log.info('Unregister hidden temp sensor', accessory.displayName, site.siteId,  identifier, accessory.UUID);          
+            this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);   
+          }
+          this.log.info('\tHidden temp sensor', device.label, site.siteId, identifier, uuid); 
+        }
+      }); 
+    }catch(error){
+      this.log.error(error)
+    }   
+  }
   private getDeviceCustomization(siteId: string, deviceId: string) : DeviceCustomizationConfig | undefined{
     var customizedDevices = (<Config>this.config).devicesCustomization;
     if(Array.isArray(customizedDevices)){

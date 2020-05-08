@@ -4,6 +4,8 @@ import { Site } from './model/myfox-api/site';
 import fetch from 'node-fetch';
 import { Device } from './model/myfox-api/device';
 import { Group } from './model/myfox-api/group';
+import { TemperatureValue } from './model/myfox-api/temperature-value';
+import { TemperatureSensor } from './model/myfox-api/temperature-sensor';
 
 import isGroup from './helpers/group-handler'
 
@@ -188,5 +190,40 @@ export class MyfoxAPI{
                 .then((res: Response) => res.json())
                 .then((json: any) => this.getAPIPayload('switchElectric', json));
     }
+  }
+
+  /***
+   * Temperature sensors
+   */
+  public async getTemperatureSensors(siteId: string): Promise<Device[]> {
+    const authToken = await this.getAuthtoken();
+    
+    this.log.debug("[MyfoxAPI] getTemperatureSensors");
+    return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/data/temperature/items?access_token=${authToken}`)
+              .then((res: Response) => this.checkHttpStatus('getTemperatureSensors', res))
+              .then((res: Response) => res.json())
+              .then((json: any) => this.getAPIPayload('getTemperatureSensors', json).items);
+  }
+
+  public async getTemperatures(siteId: string, device: Device): Promise<TemperatureValue[]> {
+    const authToken = await this.getAuthtoken();
+    
+    this.log.debug("[MyfoxAPI] getTemperatures");
+    return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/${device.deviceId}/data/temperature?access_token=${authToken}`)
+              .then((res: Response) => this.checkHttpStatus('getTemperatures', res))
+              .then((res: Response) => res.json())
+              .then((json: any) => this.getAPIPayload('getTemperatures', json).items);
+  }
+  
+  public async getLastTemperatures(siteId: string, device: Device): Promise<TemperatureSensor | undefined> {
+    const authToken = await this.getAuthtoken();
+    
+    this.log.debug("[MyfoxAPI] getTemperatures");
+    
+    return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/data/temperature/items?access_token=${authToken}`)
+              .then((res: Response) => this.checkHttpStatus('getTemperatureSensors', res))
+              .then((res: Response) => res.json())
+              .then((json: any) => <TemperatureSensor[]>(this.getAPIPayload('getTemperatureSensors', json).items))
+              .then((tempSensors) => tempSensors.find(t => t.deviceId = device.deviceId) );
   }
 }  
