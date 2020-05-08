@@ -55,7 +55,7 @@ export class MyfoxAPI{
       }    
       return object;
     }catch(error){
-      this.log.error('[MyfoxAPI] parse JSON result', error, response.body);
+      this.log.error('[MyfoxAPI] parse JSON result', error, body);
       throw( error );
     }    
   }
@@ -198,7 +198,7 @@ export class MyfoxAPI{
 
     const authToken = await this.getAuthtoken();
     if(isGroup(device)){
-      this.log.debug("[MyfoxAPI] switchElectricGroup", siteId, device);
+      this.log.debug("[MyfoxAPI] switchElectricGroup", siteId, device, on);
       return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/group/${device.groupId}/electric/${state}?access_token=${authToken}`,  { method: method })
                 .then((res: Response) => this.checkHttpStatus('switchElectric', res))
                 .then((res: Response) => this.getJSONPlayload(res))

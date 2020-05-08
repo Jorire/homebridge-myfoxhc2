@@ -1,4 +1,4 @@
-import { APIEvent, WithUUID, Service } from 'homebridge';
+import { APIEvent, WithUUID, Service, Accessory } from 'homebridge';
 import type { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig } from 'homebridge';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
@@ -23,6 +23,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
 
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
+  public discoveredAccessories: PlatformAccessory[] = [];
 
   constructor(
     public readonly log: Logger,
@@ -52,45 +53,49 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   async discoverMyfoxSites() {  
-    //TODO: remove for dev only !!!
-    while(this.accessories.length > 0) {
-      let accessory = this.accessories.pop();
-      if(accessory){
-        this.log.info('Unregister accessory', accessory.displayName, accessory.UUID);          
-        this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);   
-      }
-    }
-    //TODO: remove for dev only !!!
     try{
       const sites = await this.myfoxAPI.getSites();
       //Register new sites
-      sites.forEach(site => {
+      for (const site of sites) {
         const uuid = this.api.hap.uuid.generate(`Myfox-${site.siteId}`);
-        if (!this.accessories.find(accessory => accessory.UUID === uuid)) {
+        let accessory = this.accessories.find(accessory => accessory.UUID.localeCompare(uuid) === 0);
+        if (!accessory) {
           //If not already defined
-          //Create new accessory
-          const accessory = new this.api.platformAccessory(site.label, uuid);          
+          //Create new Site/Alarm
+          accessory = new this.api.platformAccessory(site.label, uuid);          
           accessory.context.device = site;
-          new MyfoxSecuritySystem(this, this.myfoxAPI, accessory);            
+          new MyfoxSecuritySystem(this, this.myfoxAPI, accessory);    
+          this.log.info('\tSite / Alarm', 'new', site.siteId, site.label, uuid);
+        }else{
+          this.log.info('\tSite / Alarm', 'existing', site.siteId, site.label, uuid);
+        }          
+        //Add to discovered devices
+        this.discoveredAccessories.push(accessory);  
+          
+        await this.discoverElectrics(site);
+        await this.discoverTemperatureSensors(site);
+      }
+
+      //Swap missing discovered accessory to accessory list
+      this.discoveredAccessories.forEach(accessory => {
+        let found = this.accessories.find(acc => acc.UUID.localeCompare(accessory.UUID) === 0);
+        if (!found) {      
           //Register
+          this.log.info('Register Device', accessory.displayName, accessory.UUID); 
           this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
           this.accessories.push(accessory);
-          this.log.info('Register Site', accessory.displayName, accessory.UUID);     
-          
-          this.discoverElectrics(site);
-          this.discoverTemperatureSensors(site);
-        }else{
-          this.log.info('Already registered Site', site.label, uuid); 
         }
       });
 
-      //Unregister old sites
+      //Unregister old accessories
       this.accessories.forEach(accessory =>{
-        if (!sites.find(site => {const uuid =  this.api.hap.uuid.generate(`Myfox-${site.siteId}`); return uuid === accessory.UUID })) {
-          this.log.info('Unregister Site', accessory.displayName, accessory.UUID);          
+        let found = this.discoveredAccessories.find(acc => acc.UUID.localeCompare(accessory.UUID) === 0);
+        if (!found) {
+          this.log.info('Unregister Device/Site',  accessory.displayName, accessory.UUID);          
           this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);        
         }
       });
+      this.discoveredAccessories = [];
     }catch(error){
       this.log.error(error)
     }   
@@ -110,33 +115,25 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
         let uuid: string;
         uuid = this.api.hap.uuid.generate(`Myfox-${identifier}`);
 
-        let customConf : DeviceCustomizationConfig | undefined;
-        customConf = this.getDeviceCustomization(site.siteId,identifier);
-        let accessory = this.accessories.find(accessory => accessory.UUID === uuid);
+        let customConf = this.getDeviceCustomization(site.siteId,identifier);
+        let accessory = this.accessories.find(accessory => accessory.UUID.localeCompare(uuid) === 0);
         if(!customConf || !customConf.hidden){
           const targetedService = MyfoxElectric.getTargetedService(this, customConf);
           if (!accessory) {
-            //If not already defined
             //Create new accessory
             accessory = new this.api.platformAccessory(device.label, uuid);          
             accessory.context.device = device;
-            new MyfoxElectric(this, this.myfoxAPI, site, accessory, targetedService);            
-            //Register
-            this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-            this.accessories.push(accessory);            
-            this.log.info('\tRegister electric device', isGroup(device)?'[group]':'[socket]', targetedService.name, device.label,  site.siteId, identifier, accessory.UUID);     
+            new MyfoxElectric(this, this.myfoxAPI, site, accessory, targetedService);                 
+            this.log.info('\tElectric device', 'new', site.siteId, identifier, device.label, uuid, isGroup(device)?'[group]':'[socket]', targetedService.name);     
           }else{
             //Device already defined
-            this.log.info('\tAlready registered electric device', isGroup(device)?'[group]':'[socket]', accessory.services[0].name, device.label, site.siteId, identifier, uuid); 
-          }
+            this.log.info('\tElectric device', 'existing', site.siteId, identifier, device.label, uuid);
+          }          
+          //Add to discovered devices    
+          this.discoveredAccessories.push(accessory);     
         }else{
           //Device hidden
-          if(accessory){
-            //Unregister hidden device
-            this.log.info('Unregister hidden electric device', isGroup(device)?'[group]':'[socket]', accessory.services[0].name, accessory.displayName, site.siteId, identifier, accessory.UUID);          
-            this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);   
-          }
-          this.log.info('\tHidden electric device', isGroup(device)?'[group]':'[socket]', device.label, site.siteId, identifier, uuid); 
+          this.log.info('\tElectric device', 'hidden', site.siteId, identifier, device.label, uuid);
         }
       }); 
     }catch(error){
@@ -154,31 +151,23 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
         let uuid: string;
         uuid = this.api.hap.uuid.generate(`Myfox-${identifier}`);
 
-        let customConf = this.getDeviceCustomization(site.siteId,identifier);
-        let accessory = this.accessories.find(accessory => accessory.UUID === uuid);
+        const customConf = this.getDeviceCustomization(site.siteId,identifier);
+        let accessory = this.accessories.find(accessory => accessory.UUID.localeCompare(uuid) === 0);
         if(!customConf || !customConf.hidden){
           if (!accessory) {
-            //If not already defined
             //Create new accessory
             accessory = new this.api.platformAccessory(device.label, uuid);          
             accessory.context.device = device;
-            new MyfoxTemperatureSensor(this, this.myfoxAPI, site, accessory);            
-            //Register
-            this.api.registerPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);
-            this.accessories.push(accessory);            
-            this.log.info('\tRegister temp sensor', device.label,  site.siteId, identifier, accessory.UUID);     
+            new MyfoxTemperatureSensor(this, this.myfoxAPI, site, accessory);       
+            this.log.info('\tTemperature sensor', 'new', site.siteId, identifier, device.label, uuid);       
           }else{
             //Device already defined
-            this.log.info('\tAlready registered temp sensor', device.label, site.siteId, identifier, uuid); 
-          }
+            this.log.info('\tTemperature sensor', 'existing', site.siteId, identifier, device.label, uuid);
+          }     
+          this.discoveredAccessories.push(accessory);       
         }else{
           //Device hidden
-          if(accessory){
-            //Unregister hidden device
-            this.log.info('Unregister hidden temp sensor', accessory.displayName, site.siteId,  identifier, accessory.UUID);          
-            this.api.unregisterPlatformAccessories(PLUGIN_NAME, PLATFORM_NAME, [accessory]);   
-          }
-          this.log.info('\tHidden temp sensor', device.label, site.siteId, identifier, uuid); 
+            this.log.info('\tTemperature sensor', 'hidden', site.siteId, identifier, device.label, uuid);
         }
       }); 
     }catch(error){
