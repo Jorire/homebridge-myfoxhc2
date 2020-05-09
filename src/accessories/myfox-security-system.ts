@@ -120,6 +120,7 @@ export class MyfoxSecuritySystem {
             }
             if(targetState){
               this.service.setCharacteristic(Characteristic.SecuritySystemCurrentState, targetState);  
+              this.platform.log.info("Security System current state changed", this.site.label, message.state);
             }else{
               this.platform.log.warn("IFTTT request not processed", message);
             }
