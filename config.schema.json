@@ -5,36 +5,57 @@
   "schema": {
     "type": "object",
     "properties": {
-      "clientId": {
-        "title": "Client id",
-        "description": "Check https://api.myfox.me/dev/apps",
-        "type": "string",
-        "required": true
-      },
-      "clientSecret": {
-        "title": "Client secret",
-        "description": "Check https://api.myfox.me/dev/apps",
-        "type": "string",
-        "required": true
+      "myfoxAPI": {
+        "title": "Myfox API authentication - https://api.myfox.me",
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "title": "Client id",
+            "description": "Check https://api.myfox.me/dev/apps",
+            "type": "string",
+            "required": true
+          },
+          "clientSecret": {
+            "title": "Client secret",
+            "description": "Check https://api.myfox.me/dev/apps",
+            "type": "string",
+            "required": true
+          },
+          "refreshToken": {
+            "title": "Initial refresh token",
+            "description": "Check https://api.myfox.me/dev/authentication, paragraph 'Get a Token'",
+            "type": "string",
+            "required": true
+          }
+        }
       },
       "debug": {
-        "title": "Debug messages",
-        "type": "boolean",
-        "default": false
+        "type": "object",
+        "title": "Debug option",
+        "properties": {
+          "debug": {
+            "title": "Debug messages",
+            "type": "boolean",
+            "default": false
+          },
+          "debugMyfoxAPI": {
+            "title": "Full debug Myfox API",
+            "type": "boolean",
+            "default": false
+          }
+        }
       },
-      "debugMyfoxAPI": {
-        "title": "Full debug Myfox API",
-        "type": "boolean",
-        "default": false
-      },
-      "refreshToken": {
-        "title": "Initial refresh token",
-        "description": "Check https://api.myfox.me/dev/authentication, paragraph 'Get a Token'",
-        "type": "string",
-        "required": true
+      "ifttt": {
+        "type": "object",
+        "title": "IFTTT - If This Then That - https://ifttt.com/",
+        "properties": {
+          "active": { "title": "IFTTT webhooks active", "type": "boolean" },
+          "port":  { "title": "Port for inconming requests", "type": "integer", "default": 51828, "required": true}
+        }
       },
       "devicesCustomization": {
         "type": "array",
+        "title": "Device customization",
         "items": {
           "type": "object",
           "properties": {

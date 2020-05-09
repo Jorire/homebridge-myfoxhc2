@@ -10,7 +10,6 @@ import { MyfoxTemperatureSensor } from './accessories/myfox-temperature-sensor';
 import { MyfoxScenario } from './accessories/myfox-scenario';
 import { MyfoxShutter } from './accessories/myfox-shutter';
 import { Site } from './model/myfox-api/site';
-import { Config } from './model/config';
 import { DeviceCustomizationConfig } from './model/device-customization-config';
 
 /**
@@ -34,7 +33,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
     public readonly api: API,
   ) {
     this.myfoxAPI = new MyfoxAPI(this.log, this.config);
-    this.debug = config.debug ?config.debugMyfoxAPI : false;
+    this.debug = (config.debug?.debug)?config.debug.debug : false;
     this.api.on(APIEvent.DID_FINISH_LAUNCHING, () => {      
       // All cached accessories restored discover new MyFox sites and devices
       this.log.info('Discover Myfox sites');
@@ -256,7 +255,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
   }
 
   private getDeviceCustomization(siteId: string, deviceId: string) : DeviceCustomizationConfig | undefined{
-    var customizedDevices = (<Config>this.config).devicesCustomization;
+    var customizedDevices = this.config.devicesCustomization;
     if(Array.isArray(customizedDevices)){
       const cc : DeviceCustomizationConfig | undefined = customizedDevices.find(conf => {
         return conf.deviceId.localeCompare(deviceId) === 0 && conf.siteId.localeCompare(siteId) === 0;

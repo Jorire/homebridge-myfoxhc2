@@ -25,8 +25,8 @@ export class MyfoxAPI{
     this.authToken = '';
     this.tokenExpiresIn = new Date(0);    
     this.site = config.site;
-    this.debugPlayload = config.debugMyfoxAPI ?config.debugMyfoxAPI : false;
-    this.debug = config.debug ?config.debugMyfoxAPI : false;
+    this.debugPlayload = (config.debug?.debugMyfoxAPI) ? config.debug.debugMyfoxAPI : false;
+    this.debug = (config.debug?.debug)?config.debug.debug : false;
   }  
 
   /**
@@ -83,13 +83,13 @@ export class MyfoxAPI{
    * @returns authentication token as promise 
    */
   private getAuthtoken(): Promise<string>{
-    if(!this.config.refreshToken){
+    if(!this.config.myfoxAPI.refreshToken){
       return Promise.reject('[Configuration] missing refresh token');
     }
-    if(!this.config.clientId){
+    if(!this.config.myfoxAPI.clientId){
       return Promise.reject('[Configuration] missing client id');
     }
-    if(!this.config.clientSecret){
+    if(!this.config.myfoxAPI.clientSecret){
       return Promise.reject('[Configuration] missing client secret');
     }
 
@@ -98,10 +98,10 @@ export class MyfoxAPI{
       //Get a new one using myfox API
       const method = 'POST';
       const headers = {
-        'Authorization': 'Basic ' + Buffer.from(this.config.clientId + ':' + this.config.clientSecret).toString('base64'),
+        'Authorization': 'Basic ' + Buffer.from(this.config.myfoxAPI.clientId + ':' + this.config.myfoxAPI.clientSecret).toString('base64'),
         'Content-Type': 'application/x-www-form-urlencoded',
       };
-      const body = `grant_type=refresh_token&refresh_token=${this.config.refreshToken}`;
+      const body = `grant_type=refresh_token&refresh_token=${this.config.myfoxAPI.refreshToken}`;
       if(this.debug){
         this.log.debug("[MyfoxAPI] getAuthtoken");
       }
@@ -110,7 +110,7 @@ export class MyfoxAPI{
         .then((res: Response)=> this.getJSONPlayload(res))
         .then((json: any) => {
           this.authToken = json.access_token;
-          this.config.refreshToken = json.refresh_token;
+          this.config.myfoxAPI.refreshToken = json.refresh_token;
           this.tokenExpiresIn = new Date();
           this.tokenExpiresIn.setSeconds(+(this.tokenExpiresIn.getSeconds()) + json.expires_in);
         })
