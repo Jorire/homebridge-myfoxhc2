@@ -2,7 +2,7 @@
   "private": true,
   "displayName": "Homebridge Myfox HC2 Plugin",
   "name": "homebridge-myfoxhc2",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Interact with Myfox HC2 alarm.",
   "license": "ISC",
   "repository": {
