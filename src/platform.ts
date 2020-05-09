@@ -9,8 +9,13 @@ import { MyfoxElectric } from './accessories/myfox-electric';
 import { MyfoxTemperatureSensor } from './accessories/myfox-temperature-sensor';
 import { MyfoxScenario } from './accessories/myfox-scenario';
 import { MyfoxShutter } from './accessories/myfox-shutter';
+import { IftttMessage } from './model/ifttt/ifttt-message';
 import { Site } from './model/myfox-api/site';
 import { DeviceCustomizationConfig } from './model/device-customization-config';
+import http = require('http');  
+
+
+ var myfoxHC2Plugin: MyfoxHC2Plugin
 
 /**
  * HomebridgePlatform
@@ -22,10 +27,10 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
   public readonly Characteristic = this.api.hap.Characteristic;
   public readonly myfoxAPI : MyfoxAPI;
   private debug: boolean; 
-
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
   public discoveredAccessories: PlatformAccessory[] = [];
+  public sites: MyfoxSecuritySystem[] = [];
 
   constructor(
     public readonly log: Logger,
@@ -34,10 +39,14 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
   ) {
     this.myfoxAPI = new MyfoxAPI(this.log, this.config);
     this.debug = (config.debug?.debug)?config.debug.debug : false;
+    myfoxHC2Plugin = this;
     this.api.on(APIEvent.DID_FINISH_LAUNCHING, () => {      
       // All cached accessories restored discover new MyFox sites and devices
       this.log.info('Discover Myfox sites');
       this.discoverMyfoxSites();
+      if(this.config.ifttt?.active){
+        this.listenIFTTTWebhooks();
+      }      
     });
   }
 
@@ -58,9 +67,9 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
   async discoverMyfoxSites() {  
 
     try{
-      const sites = await this.myfoxAPI.getSites();
+      const sitesDiscovered = await this.myfoxAPI.getSites();
       //Register new sites
-      for (const site of sites) {
+      for (const site of sitesDiscovered) {
         const uuid = this.api.hap.uuid.generate(`Myfox-${site.siteId}`);
         let accessory = this.accessories.find(accessory => accessory.UUID.localeCompare(uuid) === 0);
         if (!accessory) {
@@ -73,7 +82,7 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
         }                 
 
         accessory.context.device = site;
-        new MyfoxSecuritySystem(this, this.myfoxAPI, accessory);    
+        this.sites.push(new MyfoxSecuritySystem(this, this.myfoxAPI, accessory));    
         //Add to discovered devices
         this.discoveredAccessories.push(accessory);  
           
@@ -268,6 +277,85 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
       return cc;
     }else{      
       return undefined;
+    }
+  }
+
+  private listenIFTTTWebhooks() {
+    if(this.config.ifttt && this.config.ifttt.active){
+      const port = this.config.ifttt.port;
+      http.createServer(this.handleIFTTTRequest)
+          .listen(port, "0.0.0.0")
+      this.log.info("Listenning IFTTT webhooks on port '%s'.", port);
+    }    
+  }
+
+  private handleIFTTTRequest(req: http.IncomingMessage, res: http.ServerResponse){
+    myfoxHC2Plugin.log.info("HTTP request Incoming");
+    if(myfoxHC2Plugin.debug){
+      myfoxHC2Plugin.log.debug(" => Headers:", req.headers);
+    }
+    if(myfoxHC2Plugin.validateCredentials(req)){
+      if(myfoxHC2Plugin.debug){
+        myfoxHC2Plugin.log.debug("Credentials valid");
+      }
+      let data: any[] = [];
+      req.on('data', chunk => {
+        data.push(chunk)
+      })
+      req.on('end', () => {
+        try{
+          const body : string = Buffer.concat(data).toString();
+          if(myfoxHC2Plugin.debug){
+            myfoxHC2Plugin.log.debug(" => Body:", body);
+          }
+          let message: IftttMessage = JSON.parse(body);
+
+          if(myfoxHC2Plugin.debug){
+            myfoxHC2Plugin.log.debug(" => Parsed message:", message);
+          }
+          if(message.site){
+            //Find targeted site
+            let s = myfoxHC2Plugin.sites.find(s => s.site.label.localeCompare(message.site) === 0);
+            if(s){
+              s.handleIftttMessage(message);
+            }else{
+              myfoxHC2Plugin.log.warn("HTTP request not processed. Site not found", message);
+            }
+          }else{
+            //Dispatch to all sites
+            myfoxHC2Plugin.sites.forEach(s => s.handleIftttMessage(message));
+          }
+          res.statusCode = 200;  
+          res.end('{ "status": "ok" }');
+        }catch(error){
+          myfoxHC2Plugin.log.error("Error parsing HTTP request body", error);
+          res.statusCode = 422;  
+          res.end('{ "status": "ko" }');
+        }
+      })      
+    }else{
+      myfoxHC2Plugin.log.error("HTTP request not authorized", req.headers['authorization']);
+      res.statusCode = 401;
+      res.setHeader('WWW-Authenticate', 'Basic realm="Secure Area"');
+      res.end('Not authorized');
+    }
+  }
+
+  private validateCredentials(req: http.IncomingMessage) : boolean{
+    const user = myfoxHC2Plugin.config.ifttt.httpAuthUser
+    const password = myfoxHC2Plugin.config.ifttt.httpAuthPassword;
+    const auth = req.headers['authorization'];
+    if(!auth) {
+      return false;
+    }else {
+      const regexp = '^(.*):(.*)$';
+      let token =auth.split(/\s+/).pop()||'';
+      let parts = Buffer.from(token, 'base64').toString().match(regexp);
+      if(parts?.length === 3){
+        return parts[1].localeCompare(user) === 0 && parts[2].localeCompare(password) === 0;
+      } else{
+        return false;
+      }
     }
   }
 }

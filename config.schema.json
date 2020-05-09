@@ -49,8 +49,10 @@
         "type": "object",
         "title": "IFTTT - If This Then That - https://ifttt.com/",
         "properties": {
-          "active": { "title": "IFTTT webhooks active", "type": "boolean" },
-          "port":  { "title": "Port for inconming requests", "type": "integer", "default": 51828, "required": true}
+          "active": { "title": "IFTTT webhooks active", "type": "boolean", "default": false },
+          "port":  { "title": "Port for inconming requests", "type": "integer", "default": 51828, "required": true},
+          "httpAuthUser": {"title": "HTTP user", "type": "string", "required": true, "default":"admin"},
+          "httpAuthPassword": {"title": "HTTP password", "type": "string", "required": true, "default":"admin"}
         }
       },
       "devicesCustomization": {

@@ -4,10 +4,11 @@ import type { Service, PlatformAccessory, CharacteristicValue, CharacteristicSet
 import { MyfoxHC2Plugin } from '../platform';
 import { Site } from '../model/myfox-api/site';
 import { MyfoxAPI } from '../myfoxAPI';
+import { IftttMessage } from '../model/ifttt/ifttt-message';
 
 export class MyfoxSecuritySystem {
   private service: Service;
-  private site: Site;
+  public site: Site;
   constructor(
     private readonly platform: MyfoxHC2Plugin,
     private readonly myfoxAPI: MyfoxAPI,
@@ -92,5 +93,47 @@ export class MyfoxSecuritySystem {
                     callback(null) 
                   } )
                   .catch(error => {callback(error); this.platform.log.error(error)} );
+  }
+
+  handleIftttMessage(message: IftttMessage){
+    if(message){
+      switch(message.action){
+        case "alarm_state":
+          {      
+            let targetState: number | undefined;
+            switch(message.state){
+              case "armed_night": 
+              targetState = Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+              break;
+        
+              case "armed_away": 
+              targetState = Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+              break;
+        
+              case "disarmed": 
+                targetState = Characteristic.SecuritySystemCurrentState.DISARMED;
+              break;
+              
+              default:
+                targetState = undefined;
+                break;
+            }
+            if(targetState){
+              this.service.setCharacteristic(Characteristic.SecuritySystemCurrentState, targetState);  
+            }else{
+              this.platform.log.warn("IFTTT request not processed", message);
+            }
+          }
+          break;
+        case "alarm_intrusion":
+          this.service.setCharacteristic(Characteristic.SecuritySystemCurrentState, Characteristic.SecuritySystemCurrentState.ALARM_TRIGGERED);            
+          break;
+        default:
+          this.platform.log.warn("IFTTT request not processed", message);
+          break;
+      }
+    }else{
+      this.platform.log.warn("IFTTT request not processed", message);
+    }
   }
 }
