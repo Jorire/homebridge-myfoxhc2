@@ -255,7 +255,9 @@ export class MyfoxAPI{
   public async getLastTemperature(siteId: string, device: Device): Promise<TemperatureSensor | undefined> {
     const authToken = await this.getAuthtoken();
     
-    this.log.debug("[MyfoxAPI] getLastTemperature", siteId, device);
+    if(this.debug){
+      this.log.debug("[MyfoxAPI] getLastTemperature", siteId, device);
+    }
     
     return  fetch(`${this.myfoxAPIUrl}/v2/site/${siteId}/device/data/temperature/items?access_token=${authToken}`)
               .then((res: Response) => this.checkHttpStatus('getLastTemperature', res))
