@@ -37,10 +37,19 @@ Logs:
 
 # Development environnement
 see (Official documentation)[https://github.com/homebridge/homebridge#plugin-development]
+
+Setup and link local project to homebridge installation
 ```
-git clone https://github.com/Jorire/homebridge-myfoxhc2.git
-cd homebridge-myfoxhc2
-npm install
-npm link
+$ git clone https://github.com/Jorire/homebridge-myfoxhc2.git
+$ cd homebridge-myfoxhc2
+$ npm install
+$ npm link
 ```
+
+To test some modifications
+```
+$ npm run-script build
+$ homebridge -D
+```
+
 
