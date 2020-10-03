@@ -1,4 +1,4 @@
-export interface IftttMessage{
+export interface IftttMessage {
   site: string;
   action: string;
   state: string;

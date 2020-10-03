@@ -1,4 +1,4 @@
-export interface Scenario{
+export interface Scenario {
   scenarioId: string;
   label: string;
   typeLabel: string;

@@ -1,6 +1,6 @@
-import { Device } from "./device";
+import { Device } from './device';
 
-export interface TemperatureSensor extends Device{
-  lastTemperature: number,
-  lastTemperatureAt: Date
+export interface TemperatureSensor extends Device {
+  lastTemperature: number;
+  lastTemperatureAt: Date;
 }

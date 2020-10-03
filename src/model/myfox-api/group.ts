@@ -1,6 +1,6 @@
-import { Device } from "./device";
+import { Device } from './device';
 
-export interface Group{
+export interface Group {
   groupId: string;
   label: string;
   type: string;

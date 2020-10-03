@@ -1,4 +1,4 @@
-export interface Site{
+export interface Site {
   /**
    * The site unique identifier
    */
@@ -37,7 +37,7 @@ export interface Site{
   socketCount: number;
   /**
    * Number of modules on the site
-   */ 
+   */
   moduleCount: number;
   /**
    * Number of heaters on the site
@@ -46,7 +46,7 @@ export interface Site{
   /**
    * Number of scenarios on the site
    */
-  scenarioCount: number; 
+  scenarioCount: number;
   /**
    * Number of temperature sensors on the site
    */
