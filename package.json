@@ -1,8 +1,8 @@
 {
-  "private": true,
+  "private": false,
   "displayName": "Homebridge Myfox HC2 Plugin",
   "name": "homebridge-myfoxhc2",
-  "version": "1.3.5",
+  "version": "1.3.10",
   "description": "Interact with Myfox HC2 alarm.",
   "license": "ISC",
   "repository": {
@@ -18,7 +18,7 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "lint": "eslint src/**",
+    "lint": "eslint . --ext .ts",
     "watch": "npm run build && npm link && nodemon",
     "build": "rimraf ./dist && tsc",
     "prepublishOnly": "npm run lint && npm run build"
@@ -39,10 +39,10 @@
     "@typescript-eslint/eslint-plugin": "^2.29.0",
     "@typescript-eslint/parser": "^2.29.0",
     "eslint": "^6.8.0",
-    "homebridge": "^0.4.54-beta.54",
     "nodemon": "^2.0.3",
     "rimraf": "^3.0.2",
     "ts-node": "^8.9.0",
-    "typescript": "^3.8.3"
+    "typescript": "^3.8.3",
+    "homebridge": "^0.4.54-beta.54"
   }
 }
