@@ -21,6 +21,13 @@
       "warn",
       "single"
     ],
+    "consistent-this": [ 2, "self",  "vm" ], 
+    "@typescript-eslint/no-this-alias": [
+      "warn",
+      {
+        "allowedNames": ["self"] 
+      }
+    ],
     "indent": [
       "warn",
       2,
