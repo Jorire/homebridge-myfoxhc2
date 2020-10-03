@@ -1,0 +1,24 @@
+{
+  "bridge": {
+    "name": "Homebridge",
+    "username": "CC:22:3D:E3:CE:30",
+    "manufacturer": "homebridge.io",
+    "model": "homebridge",
+    "port": 51826,
+    "pin": "031-45-154"
+  },
+  "description": "Sample configuration.",
+  "ports": {
+    "start": 52100,
+    "end": 52150,
+    "comment": Range of ports that separate accessory should be bind to."
+  },
+  "platforms": [
+    {
+      "platform": "config",
+      "name": "Config",
+      "port": 8080,
+      "sudo": false
+    }
+  ]
+}

@@ -38,6 +38,10 @@ Logs:
 # Development environnement
 see (Official documentation)[https://github.com/homebridge/homebridge#plugin-development]
 
+A default config file (`config.json.sample`) is available if you want to setup an environment using nvm.
+This config file must be place in `~/.homebridge/config.json`.
+Homebridge UI is available on (port 8080)[http://localhost:8080].
+
 Setup and link local project to homebridge installation
 ```
 $ git clone https://github.com/Jorire/homebridge-myfoxhc2.git
