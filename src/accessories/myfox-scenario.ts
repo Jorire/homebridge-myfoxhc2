@@ -35,18 +35,19 @@ export class MyfoxScenario {
 
   protected resetState(mfElect: MyfoxScenario) {
     if (mfElect) {
-      mfElect.service.setCharacteristic(this.platform.Characteristic.On, false);
+      mfElect.service.setCharacteristic(mfElect.platform.Characteristic.On, false);
     }
   }
 
   setTargetState(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+    const self = this;
     this.inUse = JSON.parse(value.toString());
     if (this.inUse) {
       this.myfoxAPI.playScenario(this.site.siteId, this.device)
         .then(() => callback())
-        .then(() => setTimeout(this.resetState, 500, this))
+        .then(() => setTimeout(self.resetState, 500, self))
         .catch(error => {
-          this.platform.log.error(error); callback(error);
+          self.platform.log.error(error); callback(error);
         });
     } else {
       callback();

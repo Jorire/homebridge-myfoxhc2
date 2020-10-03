@@ -59,6 +59,7 @@ export class MyfoxShutter {
   }
 
   setTargetPosition(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+    const self = this;
     if (value > 50) {
       this.targetPosition = 100; //Open
     } else {
@@ -66,21 +67,21 @@ export class MyfoxShutter {
     }
     this.myfoxAPI.setShutterPosition(this.site.siteId, this.device, this.targetPosition === 100)
       .then(() => {
-        setTimeout(this.endMove, 1000, this, this.targetPosition, callback);
+        setTimeout(self.endMove, 1000, self, self.targetPosition, callback);
       })
       .catch(error => {
-        this.endMove(this, this.targetPosition, callback);
-        this.platform.log.error(error);
+        self.endMove(self, self.targetPosition, callback);
+        self.platform.log.error(error);
       });
   }
 
   private endMove(mfShutter: MyfoxShutter, finalTarget: number, callback: any) {
     try {
       mfShutter.currentPosition = finalTarget;
-      mfShutter.service.setCharacteristic(this.platform.Characteristic.CurrentPosition, mfShutter.currentPosition);
+      mfShutter.service.setCharacteristic(mfShutter.platform.Characteristic.CurrentPosition, mfShutter.currentPosition);
       callback(null, finalTarget);
     } catch (error) {
-      this.platform.log.error(error); callback(error);
+      mfShutter.platform.log.error(error); callback(error);
     }
   }
 

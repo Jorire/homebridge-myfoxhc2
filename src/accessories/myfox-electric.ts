@@ -77,21 +77,23 @@ export class MyfoxElectric {
   }
 
   setTargetState(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+    const hap = this.platform;
+    const self = this;
     this.inUse = JSON.parse(value.toString());
     if (this.customizedDeviceConf?.overrideType && this.customizedDeviceConf?.overrideType.localeCompare('Button') === 0) {
       if (this.inUse) {
         this.myfoxAPI.switchElectric(this.site.siteId, this.device, this.inUse)
           .then(() => callback())
-          .then(() => setTimeout(this.resetState, 500, this))
+          .then(() => setTimeout(self.resetState, 500, self))
           .catch(error => {
-            this.platform.log.error(error); callback(error);
+            hap.log.error(error); callback(error);
           });
       }
     } else {
       this.myfoxAPI.switchElectric(this.site.siteId, this.device, this.inUse)
         .then(() => callback())
         .catch(error => {
-          this.platform.log.error(error); callback(error);
+          hap.log.error(error); callback(error);
         });
     }
   }

@@ -34,25 +34,25 @@ export class MyfoxTemperatureSensor {
   }
 
   getCurrentTemperature(callback: CharacteristicGetCallback) {
-
+    const self = this;
     this.myfoxAPI.getLastTemperature(this.site.siteId, this.device)
       .then((temperature) => {
         if (temperature) {
-          this.temperature = temperature.lastTemperature;
-          this.service.updateCharacteristic(this.platform.Characteristic.StatusFault, 0);
-          this.service.updateCharacteristic(this.platform.Characteristic.StatusActive, true);
-          callback(null, this.temperature);
+          self.temperature = temperature.lastTemperature;
+          self.service.updateCharacteristic(self.platform.Characteristic.StatusFault, 0);
+          self.service.updateCharacteristic(self.platform.Characteristic.StatusActive, true);
+          callback(null, self.temperature);
         } else {
-          this.temperature = undefined;
-          this.service.updateCharacteristic(this.platform.Characteristic.StatusFault, 1);
-          this.service.updateCharacteristic(this.platform.Characteristic.StatusActive, false);
+          self.temperature = undefined;
+          self.service.updateCharacteristic(self.platform.Characteristic.StatusFault, 1);
+          self.service.updateCharacteristic(self.platform.Characteristic.StatusActive, false);
         }
       })
       .catch(error => {
-        this.service.updateCharacteristic(this.platform.Characteristic.StatusFault, 1);
-        this.service.updateCharacteristic(this.platform.Characteristic.StatusActive, false);
+        self.service.updateCharacteristic(self.platform.Characteristic.StatusFault, 1);
+        self.service.updateCharacteristic(self.platform.Characteristic.StatusActive, false);
         callback(error);
-        this.platform.log.error(error);
+        self.platform.log.error(error);
       });
 
   }

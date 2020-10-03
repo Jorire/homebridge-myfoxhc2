@@ -43,34 +43,38 @@ export class MyfoxSecuritySystem {
   }
 
   getCurrentState(callback: CharacteristicGetCallback) {
+    const hap = this.platform;
+    const service = this.service;
     this.myfoxAPI.getAlarmState(this.site.siteId)
       .then(json => {
         let state = undefined;
         switch (json.statusLabel) {
           case 'disarmed':
-            state = this.platform.Characteristic.SecuritySystemCurrentState.DISARMED;
+            state = hap.Characteristic.SecuritySystemCurrentState.DISARMED;
             break;
 
           case 'partial':
-            state = this.platform.Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
+            state = hap.Characteristic.SecuritySystemCurrentState.NIGHT_ARM;
             break;
 
           case 'armed':
-            state = this.platform.Characteristic.SecuritySystemCurrentState.AWAY_ARM;
+            state = hap.Characteristic.SecuritySystemCurrentState.AWAY_ARM;
             break;
 
           default:
             throw new Error('Unkown alarm status');
         }
-        this.service.setCharacteristic(this.platform.Characteristic.SecuritySystemCurrentState, state);
+        service.setCharacteristic(hap.Characteristic.SecuritySystemCurrentState, state);
         callback(null, state);
       })
       .catch(error => {
-        callback(error); this.platform.log.error(error);
+        callback(error); hap.log.error(error);
       });
   }
 
   setTargetState(value: CharacteristicValue, callback: CharacteristicSetCallback) {
+    const hap = this.platform;
+    const service = this.service;
     let state = undefined;
     switch (value) {
       case this.platform.Characteristic.SecuritySystemCurrentState.DISARMED:
@@ -91,11 +95,11 @@ export class MyfoxSecuritySystem {
     }
     this.myfoxAPI.setAlarmState(this.site.siteId, state)
       .then(() => {
-        this.service.setCharacteristic(this.platform.Characteristic.SecuritySystemCurrentState, value);
+        service.setCharacteristic(hap.Characteristic.SecuritySystemCurrentState, value);
         callback(null);
       })
       .catch(error => {
-        callback(error); this.platform.log.error(error);
+        callback(error); hap.log.error(error);
       });
   }
 
