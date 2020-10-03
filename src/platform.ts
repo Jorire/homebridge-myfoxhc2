@@ -39,7 +39,8 @@ export class MyfoxHC2Plugin implements DynamicPlatformPlugin {
   ) {
     this.myfoxAPI = new MyfoxAPI(this.log, this.config);
     this.debug = (config.debug?.debug) ? config.debug.debug : false;
-    myfoxHC2Plugin = this;
+    const self = this;
+    myfoxHC2Plugin = self;
     this.api.on(APIEvent.DID_FINISH_LAUNCHING, () => {
       // All cached accessories restored discover new MyFox sites and devices
       this.log.info('Discover Myfox sites');
